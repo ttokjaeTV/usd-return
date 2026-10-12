@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미국주식 원화 수익률 계산기 · 똑재TV</title>
+<meta name="description" content="달러로는 +10%인데 원화로는 왜 +3%일까? 미국주식 수익률을 주가 효과·환율 효과·교차 효과로 나누고, 본전 환율·본전 주가, 환율 시나리오까지 계산합니다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<style>
+  :root {
+    --bg: #F5EFE6;
+    --bg-alt: #EFE7DA;
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A4A;
+    --ink-mute: #8B8276;
+    --accent: #D9542B;
+    --accent-soft: #F4D5C4;
+    --border: #E5DCC8;
+    --white: #FBF7F0;
+    --brown: #8B6F47;
+    --beige-gold: #C4A57B;
+    --dark-warm: #3A2F26;
+    --dark-warm-soft: #5A4A3D;
+    --green: #4A5A4A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 32px 24px;
+    font-weight: 600;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* 헤더 */
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px; background: var(--dark-warm); color: var(--white);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 20px;
+  }
+  .logo-name { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 10px; color: var(--ink-mute); font-weight: 700; letter-spacing: 1px; }
+
+  /* 히어로 */
+  .hero { margin-bottom: 32px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--white); border: 1.5px solid var(--accent); color: var(--accent);
+    padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    margin-bottom: 20px;
+  }
+  .tag .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .hero-title { font-size: 64px; font-weight: 900; letter-spacing: -2.5px; line-height: 1.05; margin-bottom: 20px; }
+  .underline-mark { background: linear-gradient(transparent 60%, var(--accent-soft) 60%); padding: 0 4px; }
+  .hero-desc { font-size: 17px; color: var(--ink-soft); font-weight: 500; line-height: 1.7; }
+
+  /* 상단 CTA */
+  .top-cta {
+    background: var(--bg-alt); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 24px; margin-bottom: 32px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .top-cta-text { font-size: 14px; color: var(--ink-soft); font-weight: 600; }
+  .top-cta-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .top-cta-link {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; text-decoration: none;
+    background: var(--white); border: 1.5px solid var(--border); color: var(--ink);
+  }
+  .top-cta-link.primary { background: var(--accent); color: var(--white); border-color: var(--accent); }
+  .naver-mark {
+    display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;
+    background: #03C75A; color: #FFFFFF; font-weight: 900; font-size: 11px; border-radius: 3px;
+    line-height: 1; letter-spacing: -0.5px; flex-shrink: 0;
+  }
+
+  /* 카드 / 스텝 */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 32px; }
+  .step-label { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .step-line { width: 28px; height: 2px; background: var(--accent); }
+  .step-text { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: var(--accent); }
+  .card-title { font-size: 24px; font-weight: 900; letter-spacing: -0.6px; margin-bottom: 6px; }
+  .card-subtitle { font-size: 14px; color: var(--ink-mute); font-weight: 500; margin-bottom: 22px; line-height: 1.6; }
+  .card-subtitle a, .input-hint a, .method-list a, .note-box a { color: var(--accent); font-weight: 800; text-decoration: none; }
+
+  /* 입력 */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .input-group { margin-bottom: 18px; }
+  .input-group:last-child { margin-bottom: 0; }
+  .label { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: var(--ink-soft); margin-bottom: 8px; }
+  input[type=number], select {
+    background: var(--white); border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-family: inherit; font-size: 16px; color: var(--ink); font-weight: 700;
+    transition: all 0.15s ease; width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .input-hint { font-size: 12px; color: var(--ink-mute); font-weight: 600; margin-top: 6px; line-height: 1.55; }
+  .input-wrap { position: relative; }
+  .input-wrap input { padding-right: 130px; }
+  .input-unit { position: absolute; top: 50%; transform: translateY(-50%); left: 0; pointer-events: none;
+    font-size: 15px; font-weight: 700; color: var(--ink-mute); white-space: nowrap; visibility: hidden; }
+  .input-currency {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 800;
+    padding: 5px 10px; border-radius: 6px; pointer-events: none; letter-spacing: -0.3px;
+    white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .input-currency.empty { background: transparent; color: var(--ink-mute); font-weight: 600; }
+  .adv-set { margin-top: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); padding: 0 20px; }
+  .adv-set > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 16px 0; }
+  .adv-set > summary::-webkit-details-marker { display: none; }
+  .adv-set > summary::before { content: '+'; display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; align-items: center; justify-content: center; font-size: 15px; }
+  .adv-set[open] > summary::before { content: '−'; }
+  .adv-set-title { font-weight: 800; font-size: 15px; color: var(--dark-warm); }
+  .adv-set-sum { font-size: 13px; font-weight: 700; color: var(--brown); }
+  .adv-body { padding-bottom: 20px; }
+  .sub-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .adv-body .sub-card { background: var(--white); }
+  .sub-card-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.3px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    background: var(--white); border: 1.5px solid var(--border); color: var(--ink-soft);
+    border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: var(--white); }
+  .is-hidden { display: none !important; }
+  .fixed-note {
+    background: var(--accent-soft); color: var(--accent); border-radius: 10px; padding: 12px 14px;
+    font-size: 13.5px; font-weight: 700; line-height: 1.55;
+  }
+  .radio-row { display: flex; flex-direction: column; gap: 8px; }
+  .radio-opt {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .radio-opt:hover { border-color: var(--accent); }
+  .radio-opt input { margin-top: 4px; accent-color: var(--accent); }
+  .radio-opt .ro-title { font-size: 14px; font-weight: 800; }
+  .radio-opt .ro-desc { font-size: 12.5px; color: var(--ink-mute); font-weight: 500; margin-top: 2px; }
+  .radio-opt.on { border-color: var(--accent); background: #FCEFE6; }
+
+  /* 결과 */
+  .verdict {
+    background: var(--dark-warm); color: var(--white); border-radius: 20px; padding: 30px 32px; margin-bottom: 20px;
+  }
+  .verdict-label { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: var(--accent-soft); margin-bottom: 10px; }
+  .verdict-main { font-size: 30px; font-weight: 900; letter-spacing: -0.8px; line-height: 1.3; }
+  .verdict-main .hl { color: #FFB38F; }
+  .verdict-sub { font-size: 15px; color: #D9D2C5; font-weight: 500; margin-top: 12px; line-height: 1.7; }
+  .verdict-sub strong { color: var(--white); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .stat-card.accent { background: var(--accent); border-color: var(--accent); color: var(--white); }
+  .stat-card.accent .stat-label, .stat-card.accent .stat-sub { color: #FDE3D6; }
+  .stat-card.accent-green { background: var(--green); border-color: var(--green); color: var(--white); }
+  .stat-card.accent-green .stat-label, .stat-card.accent-green .stat-sub { color: #B8C4B8; }
+  .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--ink-mute); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1.15; }
+  .stat-sub { font-size: 13px; color: var(--ink-mute); margin-top: 6px; font-weight: 500; line-height: 1.5; }
+
+  .chart-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .chart-subtitle { font-size: 13px; color: var(--ink-mute); font-weight: 500; margin-bottom: 18px; line-height: 1.6; }
+  .chart-container { position: relative; height: 360px; width: 100%; }
+  .chart-container.sm { height: 300px; }
+
+  /* 분해 목록 */
+  .dc-list { margin-top: 18px; border-top: 1.5px solid var(--border); }
+  .dc-row { display: grid; grid-template-columns: 150px 96px 150px minmax(0, 1fr); gap: 4px 14px; align-items: baseline; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+  .dc-name { font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .dc-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .dc-pct, .dc-amt { font-size: 14.5px; font-weight: 800; text-align: right; white-space: nowrap; }
+  .dc-desc { font-size: 13px; color: var(--ink-soft); font-weight: 500; line-height: 1.55; }
+  .dc-row.total { background: var(--bg-alt); border-bottom: 1.5px solid var(--border); }
+  .pos { color: var(--accent); }
+  .neg { color: #5A6B7A; }
+
+  /* 시나리오 표 */
+  .table-wrap { overflow-x: auto; margin-top: 16px; border-radius: 12px; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+  .data-table th {
+    background: var(--bg-alt); padding: 12px 10px; text-align: right; font-weight: 700; color: var(--ink-soft);
+    font-size: 11.5px; border-bottom: 1.5px solid var(--border); white-space: nowrap;
+  }
+  .data-table th:first-child { text-align: center; }
+  .data-table td {
+    padding: 11px 10px; text-align: right; border-bottom: 1px solid var(--border);
+    font-weight: 600; color: var(--ink); white-space: nowrap;
+  }
+  .data-table td:first-child { text-align: center; font-weight: 800; color: var(--accent); }
+  .data-table tbody tr:hover { background: var(--bg-alt); }
+  .data-table .highlight-row { background: var(--accent-soft); }
+  .data-table .highlight-row td { font-weight: 800; }
+  .data-table .mark-row { background: #F3EEE4; }
+  .data-table td.c-accent { color: var(--accent); font-weight: 800; }
+  .data-table td.c-brown { color: var(--brown); }
+  .data-table td.c-neg { color: #5A6B7A; font-weight: 700; }
+  .scen-table { min-width: 560px; }
+  .tag-mini.base { background: var(--brown); }
+  .tag-mini.even { background: var(--green); }
+  .tag-mini {
+    display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent); color: var(--white); margin-left: 6px; vertical-align: 1px;
+  }
+
+  /* 안내 박스 */
+  .note-box { background: var(--bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 12px; padding: 16px 18px; font-size: 14px; font-weight: 500; color: var(--ink-soft); line-height: 1.7; }
+  .note-box + .note-box { margin-top: 12px; }
+  .note-box strong { color: var(--ink); font-weight: 800; }
+  .method-list { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 500; color: var(--ink-soft); line-height: 1.7; }
+  .method-list li { padding-left: 16px; position: relative; }
+  .method-list li::before { content: ''; position: absolute; left: 2px; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .method-list b { color: var(--ink); font-weight: 800; }
+  .method-h { font-size: 15px; font-weight: 800; margin: 22px 0 10px; color: var(--dark-warm); }
+  .method-h:first-of-type { margin-top: 4px; }
+
+  /* 인사이트 */
+  .insight-box { background: var(--dark-warm); color: var(--white); border-radius: 20px; padding: 36px; margin-bottom: 24px; }
+  .insight-label { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .insight-label-text { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: var(--accent-soft); }
+  .insight-title { font-size: 24px; font-weight: 900; margin-bottom: 16px; letter-spacing: -0.5px; line-height: 1.35; }
+  .insight-desc { font-size: 15px; line-height: 1.75; color: #D9D2C5; font-weight: 500; }
+  .insight-desc strong { color: var(--white); }
+  .insight-desc a { color: #FFB38F; font-weight: 800; text-decoration: none; }
+  .insight-cta {
+    margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.12);
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .insight-cta-text { font-size: 14px; color: #D9D2C5; font-weight: 600; margin-right: 8px; }
+  .cta-link {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s ease; letter-spacing: -0.2px;
+  }
+  .cta-link.primary { background: var(--accent); color: var(--white); }
+  .cta-link.primary:hover { background: #E66740; transform: translateY(-1px); }
+  .cta-link.secondary { background: rgba(255,255,255,0.08); color: var(--white); border: 1px solid rgba(255,255,255,0.15); }
+  .cta-link.secondary:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+
+  .link-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    background: var(--dark-warm); color: var(--white); border: none; padding: 11px 18px; border-radius: 12px;
+    font-family: inherit; font-weight: 700; cursor: pointer; transition: all 0.15s ease; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn.ghost { background: var(--white); color: var(--ink); border: 1.5px solid var(--border); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .hub-back { display: inline-block; font-size: 13px; color: var(--ink-mute); font-weight: 600; text-decoration: none; margin-bottom: 12px; }
+  .hub-back:hover { color: var(--accent); }
+  footer { text-align: center; font-size: 12.5px; color: var(--ink-mute); font-weight: 500; line-height: 1.8; padding: 24px 0 8px; }
+
+  @media (max-width: 1100px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 900px) {
+    .dc-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .dc-desc { grid-column: 1 / -1; }
+  }
+  @media (max-width: 768px) {
+    body { padding: 16px 12px; }
+    header { margin-bottom: 24px; }
+    .card { padding: 18px 16px !important; margin-bottom: 20px !important; border-radius: 16px !important; }
+    .hero-title { font-size: 34px !important; letter-spacing: -1.2px !important; line-height: 1.18 !important; }
+    .hero-desc { font-size: 15px; }
+    .hero-desc br { display: none; }
+    .top-cta { flex-direction: column; align-items: stretch; padding: 16px; }
+    .top-cta-links { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .top-cta-link { justify-content: center; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 14px !important; }
+    .sub-card { padding: 16px; }
+    .adv-set { padding: 0 14px; }
+    .input-wrap input { padding-right: 112px; }
+    .input-currency { max-width: 96px; font-size: 12px; }
+    .card-title { font-size: 20px; }
+    .verdict { padding: 22px 18px; border-radius: 16px; }
+    .verdict-main { font-size: 22px; letter-spacing: -0.5px; }
+    .verdict-sub { font-size: 14px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat-card { padding: 16px !important; border-radius: 14px !important; }
+    .stat-value { font-size: 21px !important; }
+    .stat-sub { font-size: 12px; }
+    .chart-title { font-size: 15px; line-height: 1.4; }
+    .chart-container { height: 300px !important; }
+    .dc-row { gap: 2px 10px; padding: 10px 2px; }
+    .dc-name, .dc-pct, .dc-amt { font-size: 13.5px; }
+    .dc-desc { font-size: 12.5px; }
+    .insight-box { padding: 24px 18px; border-radius: 16px; }
+    .insight-title { font-size: 19px !important; }
+    .insight-cta { flex-direction: column; align-items: stretch; }
+    .cta-link { justify-content: center; }
+    .table-wrap { margin: 16px -16px 0; padding: 0 16px; -webkit-overflow-scrolling: touch; }
+    .data-table { font-size: 11.5px; min-width: 640px; }
+    .scen-table { min-width: 470px; }
+    .data-table th { padding: 8px 6px; font-size: 10.5px; }
+    .data-table td { padding: 8px 6px; }
+    .note-box { font-size: 13.5px; padding: 14px; }
+    .method-list { font-size: 13.5px; }
+    .link-row .btn-row { width: 100%; }
+    .link-row .btn { flex: 1; justify-content: center; }
+  }
+  @media (max-width: 380px) {
+    .hero-title { font-size: 29px !important; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .top-cta-links { grid-template-columns: 1fr !important; }
+  }
+
+  /* 표 내려받기 (CSV·엑셀) */
+  .dl-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+  .dl-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--accent, #D9542B); background: #FBF7F0; color: var(--accent, #D9542B); cursor: pointer; line-height: 1.2; }
+  .dl-btn:hover { background: var(--accent, #D9542B); color: #fff; }
+  .dl-note { font-size: 12px; color: #8B7B6B; font-weight: 600; word-break: keep-all; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <a href="https://ttokjaetv.github.io/" class="hub-back">← 똑재TV 계산기 모음</a>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">똑</div>
+      <div>
+        <div class="logo-name">똑재TV</div>
+        <div class="logo-sub">USD RETURN CALCULATOR</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <span class="tag"><span class="dot"></span>미국주식 원화 수익률 계산기</span>
+    <h1 class="hero-title">
+      달러로는 벌었는데,<br>
+      <span class="underline-mark">원화로는 왜 덜 벌었을까?</span>
+    </h1>
+    <p class="hero-desc">
+      미국주식을 원화로 사면 사실상 '주식'과 '달러'를 함께 사는 셈입니다.<br>
+      내 수익을 주가 효과·환율 효과·교차 효과로 나누고, 본전 환율과 환율별 원화 수익률까지 보여드립니다.
+    </p>
+  </div>
+
+  <div class="top-cta">
+    <div class="top-cta-text">💡 <strong>환율이 내 수익률을 얼마나 바꾸는지</strong> 궁금하신가요? 똑재TV에서 매주 만나보세요.</div>
+    <div class="top-cta-links">
+      <a href="https://www.youtube.com/@ttok_jae" target="_blank" rel="noopener" class="top-cta-link primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        똑재TV 구독하기
+      </a>
+      <a href="https://cafe.naver.com/ttokjae" target="_blank" rel="noopener" class="top-cta-link">
+        <span class="naver-mark">N</span>
+        평생 ETF 투자 카페
+      </a>
+    </div>
+  </div>
+
+  <!-- STEP 01 : 매수·현재 -->
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">STEP 01 / 언제 얼마에 샀나요?</span></div>
+    <h2 class="card-title">주가와 환율을 입력하세요</h2>
+    <p class="card-subtitle">처음 채워진 숫자는 <strong>예시</strong>입니다. 환율은 실시간으로 불러오지 않으니, 증권사 앱의 매수 체결 환율과 오늘 환율(매매기준율)을 직접 넣어 주세요. 여러 번 나눠 샀다면 평균 매수가·평균 매수 환율을 넣으면 됩니다.</p>
+
+    <div class="grid-2" style="align-items:stretch;">
+      <div class="sub-card">
+        <div class="sub-card-title">주가 (달러)</div>
+        <div class="input-group">
+          <label class="label" for="bp">매수가 (1주, 평균 단가)</label>
+          <div class="input-wrap">
+            <input type="number" id="bp" data-unit="달러" value="100" step="any" min="0" inputmode="decimal">
+            <span class="input-currency" id="bp-display">$100.00</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="label" for="cp">현재가 (이미 팔았다면 매도가)</label>
+          <div class="input-wrap">
+            <input type="number" id="cp" data-unit="달러" value="110" step="any" min="0" inputmode="decimal">
+            <span class="input-currency" id="cp-display">$110.00</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="label" for="qty">수량</label>
+          <div class="input-wrap">
+            <input type="number" id="qty" data-unit="주" value="10" step="any" min="0" inputmode="decimal">
+            <span class="input-currency" id="qty-display">$1,000 어치</span>
+          </div>
+          <div class="input-hint">소수점 거래라면 0.35처럼 소수로 넣어도 됩니다</div>
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <div class="sub-card-title">환율 (원/달러)</div>
+        <div class="input-group">
+          <label class="label" for="fb">매수할 때 환율</label>
+          <div class="input-wrap">
+            <input type="number" id="fb" data-unit="원" value="1450" step="any" min="0" inputmode="decimal">
+            <span class="input-currency" id="fb-display">1,450원</span>
+          </div>
+          <div class="chips" data-target="fb">
+            <button class="chip" data-v="1200">1,200</button>
+            <button class="chip" data-v="1300">1,300</button>
+            <button class="chip" data-v="1400">1,400</button>
+            <button class="chip" data-v="1450">1,450</button>
+            <button class="chip" data-v="1500">1,500</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="label" for="fn">지금 환율 (이미 팔았다면 원화로 바꾼 환율)</label>
+          <div class="input-wrap">
+            <input type="number" id="fn" data-unit="원" value="1363" step="any" min="0" inputmode="decimal">
+            <span class="input-currency" id="fn-display">1,363원</span>
+          </div>
+          <div class="chips" data-target="fn">
+            <button class="chip" data-v="1200">1,200</button>
+            <button class="chip" data-v="1300">1,300</button>
+            <button class="chip" data-v="1363">1,363</button>
+            <button class="chip" data-v="1400">1,400</button>
+            <button class="chip" data-v="1500">1,500</button>
+          </div>
+          <div class="input-hint">예시값이며 실시간 환율이 아닙니다 · 칩은 빠른 입력용 숫자일 뿐 전망이 아닙니다</div>
+        </div>
+      </div>
+    </div>
+
+    <details class="adv-set" id="adv-set">
+      <summary><span class="adv-set-title">선택: 배당·수수료·환전 비용</span><span class="adv-set-sum" id="adv-summary">배당 없음 · 수수료 없음</span></summary>
+      <div class="adv-body">
+        <div class="grid-3" style="align-items:start;">
+          <div class="input-group">
+            <label class="label" for="dv">받은 배당 합계 (달러, 세후)</label>
+            <div class="input-wrap">
+              <input type="number" id="dv" data-unit="달러" value="0" step="any" min="0" inputmode="decimal">
+              <span class="input-currency" id="dv-display">없음</span>
+            </div>
+            <div class="input-hint">미국 원천징수 15%를 뗀 뒤 실제로 들어온 달러 합계 · 지금 환율로 원화 환산</div>
+          </div>
+          <div class="input-group">
+            <label class="label" for="cb">매수 수수료</label>
+            <div class="input-wrap">
+              <input type="number" id="cb" data-unit="%" value="0" step="any" min="0" max="5" inputmode="decimal">
+              <span class="input-currency" id="cb-display">없음</span>
+            </div>
+            <div class="chips" data-target="cb">
+              <button class="chip" data-v="0">0%</button>
+              <button class="chip" data-v="0.07">0.07%</button>
+              <button class="chip" data-v="0.1">0.1%</button>
+              <button class="chip" data-v="0.25">0.25%</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="label" for="cs">매도 수수료</label>
+            <div class="input-wrap">
+              <input type="number" id="cs" data-unit="%" value="0" step="any" min="0" max="5" inputmode="decimal">
+              <span class="input-currency" id="cs-display">없음</span>
+            </div>
+            <div class="chips" data-target="cs">
+              <button class="chip" data-v="0">0%</button>
+              <button class="chip" data-v="0.07">0.07%</button>
+              <button class="chip" data-v="0.1">0.1%</button>
+              <button class="chip" data-v="0.25">0.25%</button>
+            </div>
+          </div>
+        </div>
+        <p class="input-hint" style="margin:4px 0 16px;">수수료율은 증권사·이벤트마다 다릅니다. <a href="https://ttokjaetv.github.io/trading-fee/" target="_blank" rel="noopener">증권사 수수료 비교표</a>에서 내 증권사 수수료를 확인해 보세요.</p>
+
+        <div class="sub-card">
+          <div class="sub-card-title">환전 비용 (원→달러, 달러→원 양쪽에 적용)</div>
+          <div class="grid-2" style="align-items:start;">
+            <div class="radio-row">
+              <label class="radio-opt on" id="fxm-rate-opt">
+                <input type="radio" name="fxm" value="rate" checked>
+                <span><span class="ro-title">환전 수수료율로 입력</span>
+                <span class="ro-desc" style="display:block;">매매기준율보다 몇 % 불리하게 바꾸는지 (예: 0.05%)</span></span>
+              </label>
+              <label class="radio-opt" id="fxm-pref-opt">
+                <input type="radio" name="fxm" value="pref">
+                <span><span class="ro-title">환율 우대율로 입력</span>
+                <span class="ro-desc" style="display:block;">"환율 우대 95%"처럼 안내받았을 때</span></span>
+              </label>
+            </div>
+            <div>
+              <div class="input-group" id="fxf-group">
+                <label class="label" for="fxf">환전 수수료율 (한 번 바꿀 때)</label>
+                <div class="input-wrap">
+                  <input type="number" id="fxf" data-unit="%" value="0" step="any" min="0" max="5" inputmode="decimal">
+                  <span class="input-currency" id="fxf-display">없음</span>
+                </div>
+                <div class="chips" data-target="fxf">
+                  <button class="chip" data-v="0">0%</button>
+                  <button class="chip" data-v="0.05">0.05%</button>
+                  <button class="chip" data-v="0.1">0.1%</button>
+                  <button class="chip" data-v="0.25">0.25%</button>
+                  <button class="chip" data-v="1">1%</button>
+                </div>
+              </div>
+              <div class="is-hidden" id="pref-group">
+                <div class="input-group">
+                  <label class="label" for="pf">환율 우대율</label>
+                  <div class="input-wrap">
+                    <input type="number" id="pf" data-unit="%" value="95" step="any" min="0" max="100" inputmode="decimal">
+                    <span class="input-currency" id="pf-display">우대 95%</span>
+                  </div>
+                  <div class="chips" data-target="pf">
+                    <button class="chip" data-v="0">0%</button>
+                    <button class="chip" data-v="50">50%</button>
+                    <button class="chip" data-v="90">90%</button>
+                    <button class="chip" data-v="95">95%</button>
+                    <button class="chip" data-v="100">100%</button>
+                  </div>
+                </div>
+                <div class="input-group">
+                  <label class="label" for="sp">우대 전 기본 환전 스프레드</label>
+                  <div class="input-wrap">
+                    <input type="number" id="sp" data-unit="%" value="1" step="any" min="0" max="5" inputmode="decimal">
+                    <span class="input-currency" id="sp-display">1.00%</span>
+                  </div>
+                  <div class="input-hint">1%는 예시입니다. 증권사·은행마다 달라서 내 증권사 환전 안내에서 확인해 주세요 · 실제 수수료율 = 스프레드 × (1 − 우대율)</div>
+                </div>
+              </div>
+              <div class="input-hint" id="fx-eff-line">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- STEP 02 : 결과 -->
+  <div class="step-label"><div class="step-line"></div><span class="step-text">STEP 02 / 결과</span></div>
+  <div class="verdict" id="verdict">
+    <div class="verdict-label" id="verdict-label">RESULT</div>
+    <div class="verdict-main" id="verdict-main">-</div>
+    <div class="verdict-sub" id="verdict-sub"></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card accent"><div class="stat-label" id="s1-label">원화 수익률</div><div class="stat-value" id="s1-value">-</div><div class="stat-sub" id="s1-sub"></div></div>
+    <div class="stat-card"><div class="stat-label" id="s2-label">달러 수익률</div><div class="stat-value" id="s2-value">-</div><div class="stat-sub" id="s2-sub"></div></div>
+    <div class="stat-card"><div class="stat-label" id="s3-label">환율 변화</div><div class="stat-value" id="s3-value">-</div><div class="stat-sub" id="s3-sub"></div></div>
+    <div class="stat-card accent-green"><div class="stat-label" id="s4-label">본전 환율</div><div class="stat-value" id="s4-value">-</div><div class="stat-sub" id="s4-sub"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">수익 분해</span></div>
+    <h3 class="chart-title">원화 손익은 어디서 왔을까?</h3>
+    <p class="chart-subtitle" id="dc-subtitle">-</p>
+    <div class="chart-container sm"><canvas id="dc-chart"></canvas></div>
+    <div class="dc-list" id="dc-list"></div>
+    <p class="input-hint" style="margin-top:12px;">%p는 처음 들어간 원화 원금(매수가 × 수량 × 매수 환율) 대비 몇 %포인트인지입니다. 위 칸을 모두 더하면 '원화 손익 합계'와 같습니다.</p>
+  </div>
+
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">본전 점검</span></div>
+    <h3 class="chart-title">어디까지 버틸 수 있을까?</h3>
+    <p class="chart-subtitle">하나는 그대로 두고 다른 하나만 움직일 때, 원화로 손익이 0이 되는 지점입니다.</p>
+    <div class="grid-2">
+      <div class="note-box" id="be-fx">-</div>
+      <div class="note-box" id="be-px" style="margin-top:0;">-</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">환율 시나리오</span></div>
+    <h3 class="chart-title">주가는 그대로, 환율만 바뀌면?</h3>
+    <p class="chart-subtitle" id="scen-subtitle">-</p>
+    <div class="dl-bar">
+      <button type="button" class="dl-btn" id="dl-csv">CSV 내려받기</button>
+      <button type="button" class="dl-btn" id="dl-xlsx">엑셀(.xlsx) 내려받기</button>
+      <span class="dl-note">엑셀에는 환율 시나리오 표와 수익 분해 표가 함께 들어갑니다 (원 단위 숫자 · 세전)</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table scen-table">
+        <thead>
+          <tr>
+            <th>현재 환율 대비</th>
+            <th>환율</th>
+            <th id="th-val">원화 평가액</th>
+            <th>원화 손익</th>
+            <th>원화 수익률</th>
+          </tr>
+        </thead>
+        <tbody id="scen-body"></tbody>
+      </table>
+    </div>
+    <p class="input-hint" style="margin-top:12px;">시나리오는 비교용 가정이며 환율 전망이 아닙니다. 주가·배당·수수료는 위에 넣은 값 그대로 두고 환율만 바꿨습니다.</p>
+  </div>
+
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">세금과 함께 보기</span></div>
+    <h3 class="chart-title">이 계산에는 세금이 빠져 있습니다</h3>
+    <p class="chart-subtitle">원화 손익이 세금을 떼기 전 금액이라는 점, 꼭 기억해 주세요.</p>
+    <div class="note-box">
+      <strong>해외주식 양도소득세는 넣지 않았습니다.</strong> 미국주식을 직접 사고판 경우, 1년(1~12월) 동안 실현한 양도차익을 모두 더해 <strong>연 250만원을 공제한 뒤 22%</strong>(양도소득세 20% + 지방소득세 2%)를 다음 해 5월에 신고·납부합니다 (2026년 10월 확인, 소득세법 기준). 양도차익은 <strong>원화로</strong> 계산하기 때문에(산 날·판 날 환율로 각각 환산) 환율이 오른 몫도 과세 대상에 들어갑니다. 달러로는 본전이어도 환율이 올랐다면 세금이 나올 수 있다는 뜻입니다.<br>
+      → 양도세는 <a href="https://ttokjaetv.github.io/overseas-stock-tax/" target="_blank" rel="noopener">해외주식 양도세 계산기</a>에서 따로 계산해 보세요.
+    </div>
+    <div class="note-box">
+      <strong>국내 증시에 상장된 미국 ETF도 원리는 같습니다.</strong> 이름에 (H)가 없는 환노출형이라면 원화로 거래해도 속은 달러 자산이라, 주가 효과 × 환율 효과가 그대로 기준가에 반영됩니다. 다만 세금은 다릅니다(일반 계좌라면 매매차익에 배당소득세 15.4%, 양도세 250만원 공제 없음). 환헤지형(H)과 환노출형 중 무엇이 나았을지는 <a href="https://ttokjaetv.github.io/fx-hedge-calc/" target="_blank" rel="noopener">환헤지 비교 계산기</a>로 비교해 볼 수 있습니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="link-row">
+      <div>
+        <h3 class="chart-title">결과 공유하기</h3>
+        <p class="chart-subtitle" style="margin-bottom:0;">결과 복사는 요약 몇 줄을, 링크 복사는 입력값이 담긴 주소를 복사합니다. 카페 댓글이나 메모에 붙여넣으세요.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" id="copy-result">결과 복사</button>
+        <button class="btn" id="copy-link">링크 복사</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-box">
+    <div class="insight-label">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D9542B" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-4.5 3.3L17 20l-5-3.5L7 20l1.5-6.7L4 10l6.1-1.2L12 3z"/></svg>
+      <span class="insight-label-text">KEY INSIGHT</span>
+    </div>
+    <h3 class="insight-title" id="insight-title">-</h3>
+    <p class="insight-desc" id="insight-desc">-</p>
+    <div class="insight-cta">
+      <div class="insight-cta-text">📊 환율까지 보고 투자해야 진짜 수익률이 보입니다.</div>
+      <a href="https://www.youtube.com/@ttok_jae" target="_blank" rel="noopener" class="cta-link primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        똑재TV 구독하기
+      </a>
+      <a href="https://cafe.naver.com/ttokjae" target="_blank" rel="noopener" class="cta-link secondary">
+        <span class="naver-mark">N</span>
+        평생 ETF 투자 카페 가입
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step-label"><div class="step-line"></div><span class="step-text">계산 방법과 가정</span></div>
+    <h3 class="chart-title">이렇게 계산했습니다</h3>
+    <div class="method-h">공식</div>
+    <ul class="method-list">
+      <li><b>달러 수익률</b> = (현재가 × 수량 + 배당) ÷ (매수가 × 수량) − 1. 달러 통장 기준으로 얼마나 불었는지입니다.</li>
+      <li><b>환율 변화율</b> = 지금 환율 ÷ 매수 환율 − 1. 1달러가 원화로 몇 % 비싸졌는지(싸졌는지)입니다.</li>
+      <li><b>원화 수익률</b> = (현재가 × 지금 환율) ÷ (매수가 × 매수 환율) − 1 = (1 + 달러 수익률) × (1 + 환율 변화율) − 1.</li>
+      <li><b>세 칸으로 나누기</b>: 원화 수익률 = 주가 효과(달러 수익률) + 환율 효과(환율 변화율) + 교차 효과(둘을 곱한 값). 예를 들어 달러로 +10%, 환율 −6%면 10% − 6% + (10% × −6% = −0.6%) = +3.4%입니다.</li>
+      <li><b>교차 효과를 쉽게</b>: 주가로 번 10%(달러)도 원화로 바꿀 때 환율 변화를 한 번 더 겪습니다. 번 돈 자체가 6% 싸게 바뀌니 −0.6%p가 추가로 빠지는 것이죠. 둘 다 오르면 덤, 하나만 오르면 살짝 깎이는 작은 칸입니다.</li>
+      <li><b>원화 손익 금액</b> = 원화 원금(매수가 × 수량 × 매수 환율) × 각 효과(%). 수수료·환전 비용을 넣으면 실제로 낸 돈과 받는 돈의 차이를 '비용' 칸으로 따로 보여 줍니다.</li>
+      <li><b>본전 환율</b> = 주가·배당이 지금 그대로일 때 원화 손익이 0이 되는 환율 (비용이 없으면 매수 환율 ÷ (1 + 달러 수익률)). <b>본전 주가</b> = 환율이 지금 그대로일 때 원화 손익이 0이 되는 주가.</li>
+      <li>환전 비용은 원화를 달러로 바꿀 때 환율을 그만큼 비싸게, 달러를 원화로 바꿀 때 그만큼 싸게 적용했습니다. 아직 팔지 않았더라도 '지금 팔고 원화로 바꾼다면'을 기준으로 계산합니다.</li>
+    </ul>
+    <div class="method-h">계산에 넣지 않은 것</div>
+    <ul class="method-list">
+      <li><b>세금</b>: 해외주식 양도소득세(연 250만원 공제 후 22%), 국내상장 ETF의 배당소득세, 금융소득종합과세는 넣지 않았습니다. 배당은 이미 세금을 뗀 금액을 넣는다고 가정합니다.</li>
+      <li><b>실시간 환율·주가</b>: 화면의 환율·주가 기본값은 예시이며 자동으로 불러오지 않습니다.</li>
+      <li><b>배당을 받은 날의 환율</b>: 배당은 받은 뒤 달러로 두었다가 지금 환율로 바꾼다고 가정했습니다. 받자마자 원화로 바꿨다면 실제 원화 금액은 다를 수 있습니다.</li>
+      <li><b>배당 재투자·분할매수 시점</b>: 평균 매수가·평균 매수 환율 하나로 계산합니다. 여러 번 나눠 샀다면 매번의 환율이 달라 실제와 조금 차이 날 수 있습니다.</li>
+      <li><b>기타 비용</b>: 미국 SEC 수수료 같은 소액 거래세, 증권사 이벤트 혜택, 달러 예수금 이자는 넣지 않았습니다.</li>
+    </ul>
+  </div>
+
+  <footer>
+    ※ 본 계산기는 세금을 제외한 참고용 단순 계산 도구이며, 실제 체결 환율·수수료·세금에 따라 결과가 달라질 수 있습니다.<br>
+    예시로 든 숫자는 특정 종목이 아니며, 특정 종목·상품의 매수·매도 권유가 아닙니다. 환율 시나리오는 전망이 아닙니다.<br>
+    🔒 입력한 숫자는 이 브라우저 안에서만 계산되며, 서버로 보내거나 따로 저장하지 않습니다.
+  </footer>
+</div>
+
+<script>
+// ============== 표 내려받기 (CSV · 엑셀 .xlsx) — 외부 라이브러리 없이 동작 ==============
+// TJX.csv('파일이름', rows) · TJX.xlsx('파일이름', [{ name: '시트', rows, widths }])
+// rows = [[머리글...], [값...], ...]  숫자는 숫자 그대로 넣으면 엑셀에서 계산 가능한 숫자 칸이 됩니다
+const TJX = (() => {
+  const enc = new TextEncoder();
+  function csvText(rows) {
+    return '﻿' + rows.map(r => r.map(v => {
+      if (v == null) return '';
+      if (typeof v === 'number') return isFinite(v) ? String(Math.round(v * 100) / 100) : '';
+      const t = String(v);
+      return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    }).join(',')).join('\r\n');
+  }
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zipStore(files) {   // 압축 없이 묶기 (엑셀은 이 형식도 그대로 엽니다)
+    const parts = [], central = []; let off = 0;
+    for (const f of files) {
+      const nm = enc.encode(f.name), d = enc.encode(f.text), c = crc32(d);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint16(12, 0x21, true); lh.setUint32(14, c, true); lh.setUint32(18, d.length, true); lh.setUint32(22, d.length, true);
+      lh.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(lh.buffer), nm, d);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint16(14, 0x21, true); ch.setUint32(16, c, true); ch.setUint32(20, d.length, true); ch.setUint32(24, d.length, true);
+      ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+      central.push(new Uint8Array(ch.buffer), nm);
+      off += 30 + nm.length + d.length;
+    }
+    const cs = central.reduce((s, a) => s + a.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cs, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  function sheetXml(sh) {
+    const rows = sh.rows || [];
+    const nCol = rows.reduce((m, r) => Math.max(m, r.length), 1);
+    const widths = sh.widths || [];
+    const cols = Array.from({ length: nCol }, (_, i) => `<col min="${i + 1}" max="${i + 1}" width="${widths[i] || (i === 0 ? 12 : 16)}" customWidth="1"/>`).join('');
+    const body = rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => {
+      const ref = colName(ci) + (ri + 1);
+      if (v == null || v === '') return '';
+      if (typeof v === 'number' && isFinite(v)) {
+        const st = ri === 0 ? 2 : (Math.abs(v - Math.round(v)) < 1e-9 ? 1 : 3);
+        return `<c r="${ref}" s="${st}"><v>${Math.round(v * 10000) / 10000}</v></c>`;
+      }
+      return `<c r="${ref}" t="inlineStr"${ri === 0 ? ' s="2"' : ''}><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+    }).join('') + '</row>').join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+  }
+  function xlsxBlob(sheets) {
+    const W = 'http://schemas.openxmlformats.org';
+    const files = [
+      { name: '[Content_Types].xml', text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${W}/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>` },
+      { name: '_rels/.rels', text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${W}/package/2006/relationships"><Relationship Id="rId1" Type="${W}/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+      { name: 'xl/workbook.xml', text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="${W}/spreadsheetml/2006/main" xmlns:r="${W}/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${esc(String(s.name || 'Sheet' + (i + 1)).replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>` },
+      { name: 'xl/_rels/workbook.xml.rels', text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${W}/package/2006/relationships">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="${W}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="${W}/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+      { name: 'xl/styles.xml', text: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${W}/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="맑은 고딕"/></font><font><b/><sz val="11"/><name val="맑은 고딕"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>` },
+      ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: sheetXml(s) })),
+    ];
+    return zipStore(files);
+  }
+  function save(blob, name) {
+    const a = document.createElement('a'), u = URL.createObjectURL(blob);
+    a.href = u; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 1500);
+  }
+  const stamp = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
+  return {
+    csvText, xlsxBlob,
+    csv(name, rows) { save(new Blob([csvText(rows)], { type: 'text/csv;charset=utf-8' }), `${name}_${stamp()}.csv`); },
+    xlsx(name, sheets) { save(xlsxBlob(sheets), `${name}_${stamp()}.xlsx`); },
+  };
+})();
+
+// ============== 포맷 ==============
+const MINUS = '−';
+function fmtNum(n, d = 0) { return Math.abs(n).toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+// 원 금액: 1억 미만은 원 단위 전부, 1억 이상은 "1억 2,345만원"
+function krw(n) {
+  const neg = n < 0; const a = Math.abs(Math.round(n));
+  let s;
+  if (a >= 100000000) {
+    const eok = Math.floor(a / 100000000), man = Math.round((a % 100000000) / 10000);
+    s = man ? eok.toLocaleString() + '억 ' + man.toLocaleString() + '만원' : eok.toLocaleString() + '억원';
+  } else s = a.toLocaleString() + '원';
+  return (neg ? MINUS : '') + s;
+}
+const krwS = n => (n > 0.5 ? '+' : '') + krw(n);   // 부호 붙인 원 금액
+// 차트용 짧은 표기
+function krwShort(n) {
+  const neg = n < 0; const a = Math.abs(n); let s;
+  if (a >= 100000000) s = (a / 100000000).toFixed(2) + '억';
+  else if (a >= 10000) s = (a >= 1000000 ? Math.round(a / 10000).toLocaleString() : (Math.round(a / 1000) / 10).toLocaleString()) + '만';
+  else s = Math.round(a).toLocaleString();
+  return (neg ? MINUS : '') + s;
+}
+const usd = (n, d = 2) => (n < 0 ? MINUS : '') + '$' + fmtNum(n, d);
+const usdS = n => (n > 0.004 ? '+' : '') + usd(n);
+const fxT = v => fmtNum(v, Math.abs(v - Math.round(v)) < 1e-9 ? 0 : 1) + '원';
+// 퍼센트(소수 비율 입력): +10.0% / −6.0%
+function pctS(r, d = 1) {
+  const v = Math.round(r * 100 * Math.pow(10, d)) / Math.pow(10, d);
+  if (v === 0) return (0).toFixed(d) + '%';
+  return (v > 0 ? '+' : MINUS) + Math.abs(v).toFixed(d) + '%';
+}
+const ppS = (r, d = 1) => pctS(r, d).replace('%', '%p');
+const cls = v => v > 1e-9 ? 'pos' : v < -1e-9 ? 'neg' : '';
+
+// ============== 입력 ==============
+function readInputs() {
+  const num = (id, d) => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : d; };
+  const fxm = document.querySelector('input[name=fxm]:checked').value;
+  const pref = Math.max(0, Math.min(100, num('pf', 95)));
+  const spread = Math.max(0, Math.min(5, num('sp', 1)));
+  const fxFee = fxm === 'pref' ? spread * (1 - pref / 100) : Math.max(0, Math.min(5, num('fxf', 0)));
+  return {
+    bp: Math.max(0, num('bp', 0)), cp: Math.max(0, num('cp', 0)), qty: Math.max(0, num('qty', 0)),
+    fb: Math.max(0, num('fb', 0)), fn: Math.max(0, num('fn', 0)),
+    dv: Math.max(0, num('dv', 0)),
+    cb: Math.max(0, Math.min(5, num('cb', 0))) / 100, cs: Math.max(0, Math.min(5, num('cs', 0))) / 100,
+    fxm, pref, spread, fxFeePct: fxFee, f: fxFee / 100,
+  };
+}
+const validInp = i => i.bp > 0 && i.qty > 0 && i.fb > 0 && i.fn > 0;
+
+// ============== 계산 엔진 ==============
+// fx: 평가에 쓸 환율 (시나리오용으로 바꿔 넣을 수 있음)
+function compute(i, fx = i.fn) {
+  const c0usd = i.bp * i.qty;                         // 매수 금액(달러, 수수료 전)
+  const C0 = c0usd * i.fb;                            // 원화 원금(수수료·환전 비용 전) = 분해 기준
+  const rP = i.cp / i.bp - 1;                         // 주가 효과(주가만)
+  const rD = i.dv / c0usd;                            // 배당 몫
+  const rU = rP + rD;                                 // 달러 수익률(주가+배당, 비용 전)
+  const rF = fx / i.fb - 1;                           // 환율 변화율
+  const rX = rU * rF;                                 // 교차 효과
+  const rKg = (1 + rU) * (1 + rF) - 1;                // 비용 전 원화 수익률 (= rU + rF + rX)
+  // 실제로 낸 돈 / 지금 팔고 원화로 바꾸면 받는 돈
+  const costUsd = c0usd * (1 + i.cb);
+  const costKrw = costUsd * i.fb * (1 + i.f);
+  const procUsd = i.cp * i.qty * (1 - i.cs) + i.dv;
+  const procKrw = procUsd * fx * (1 - i.f);
+  const pnl = procKrw - costKrw;
+  const rK = pnl / costKrw;                           // 원화 수익률(비용 반영)
+  const amtP = C0 * rP, amtD = C0 * rD, amtF = C0 * rF, amtX = C0 * rX;
+  const amtCost = pnl - C0 * rKg;                     // 수수료·환전 비용 몫 (음수)
+  const usdPnl = procUsd - costUsd;                   // 달러 손익(매매 수수료 반영)
+  // 본전 환율: 주가·배당 그대로, 원화 손익 0
+  const beFx = procUsd > 0 ? costKrw / (procUsd * (1 - i.f)) : null;
+  // 본전 주가: 환율 그대로, 원화 손익 0
+  const bePx = (costKrw / (fx * (1 - i.f)) - i.dv) / (i.qty * (1 - i.cs));
+  return { c0usd, C0, rP, rD, rU, rF, rX, rKg, costUsd, costKrw, procUsd, procKrw, pnl, rK,
+    amtP, amtD, amtF, amtX, amtCost, usdPnl, beFx, bePx, fx, hasCost: i.cb > 0 || i.cs > 0 || i.f > 0 };
+}
+
+// ============== 렌더 ==============
+function setStat(n, label, value, sub) {
+  document.getElementById('s' + n + '-label').textContent = label;
+  document.getElementById('s' + n + '-value').textContent = value;
+  document.getElementById('s' + n + '-sub').innerHTML = sub || '';
+}
+let dcChart = null, lastExport = null, lastText = '';
+
+function render() {
+  const inp = readInputs();
+  const vLabel = document.getElementById('verdict-label');
+  const vMain = document.getElementById('verdict-main');
+  const vSub = document.getElementById('verdict-sub');
+  updateFxEffLine(inp);
+  if (!validInp(inp)) {
+    vLabel.textContent = 'RESULT';
+    vMain.textContent = '매수가·수량·매수 환율·지금 환율을 입력해 주세요';
+    vSub.textContent = '네 칸이 모두 0보다 커야 계산할 수 있습니다.';
+    [1, 2, 3, 4].forEach(n => setStat(n, '-', '-', ''));
+    ['dc-list', 'scen-body'].forEach(id => document.getElementById(id).innerHTML = '');
+    ['be-fx', 'be-px'].forEach(id => document.getElementById(id).textContent = '-');
+    document.getElementById('dc-subtitle').textContent = '-';
+    document.getElementById('scen-subtitle').textContent = '-';
+    document.getElementById('insight-title').textContent = '숫자를 넣으면 주가 몫과 환율 몫이 나뉩니다';
+    document.getElementById('insight-desc').textContent = '미국주식 수익은 주가와 환율, 두 가지가 함께 만듭니다.';
+    if (dcChart) { dcChart.destroy(); dcChart = null; }
+    lastExport = null; lastText = '';
+    syncUrl(inp);
+    return;
+  }
+  const r = compute(inp);
+  const fxDir = r.rF > 1e-9 ? '올라서' : r.rF < -1e-9 ? '내려서' : '그대로라';
+  const fxWord = r.rF > 1e-9 ? '올라' : '내려';
+
+  // 결론
+  vLabel.textContent = '달러 수익률 vs 원화 수익률';
+  const gap = r.rK - r.rU;
+  let main;
+  if (Math.abs(r.rF) < 0.0005 && !r.hasCost) {
+    main = `달러로 <span class="hl">${pctS(r.rU)}</span>, 원화로도 <span class="hl">${pctS(r.rK)}</span> — 환율이 그대로라 차이가 없습니다`;
+  } else {
+    const why = Math.abs(r.rF) >= 0.0005 ? `환율이 ${pctS(Math.abs(r.rF))} ${fxWord}서` : '수수료·환전 비용 때문에';
+    const conj = (r.rU >= 0) === (r.rK >= 0) ? (Math.abs(r.rK) < Math.abs(r.rU) ? '인데' : ',') : '인데';
+    main = `달러로는 <span class="hl">${pctS(r.rU)}</span>${conj} 원화로는 <span class="hl">${pctS(r.rK)}</span><br>— ${why.replace('+', '')}`;
+  }
+  vMain.innerHTML = main;
+  let sub = `원화로 <strong>${krw(r.costKrw)}</strong>을 넣어 지금 <strong>${krw(r.procKrw)}</strong>${inp.dv > 0 ? '(배당 포함)' : ''}이 되었습니다. 원화 손익 <strong>${krwS(r.pnl)}</strong>`;
+  sub += ` 중 주가${inp.dv > 0 ? '·배당' : ''} 몫이 <strong>${krwS(r.amtP + r.amtD)}</strong>, 환율 몫이 <strong>${krwS(r.amtF)}</strong>, 교차 몫이 <strong>${krwS(r.amtX)}</strong>`;
+  sub += r.hasCost ? `, 수수료·환전 비용이 <strong>${krwS(r.amtCost)}</strong>입니다.` : '입니다.';
+  if (Math.abs(gap) >= 0.0005) sub += ` 달러 수익률과의 차이는 <strong>${ppS(gap)}</strong>입니다.`;
+  vSub.innerHTML = sub;
+
+  // 카드 4개
+  setStat(1, '원화 수익률', pctS(r.rK), `원화 손익 ${krwS(r.pnl)}${r.hasCost ? ' · 비용 반영' : ''}`);
+  setStat(2, '달러 수익률', pctS(r.rU), `주가 ${pctS(r.rP)}${inp.dv > 0 ? ' · 배당 ' + pctS(r.rD) : ''} · 달러 손익 ${usdS(r.usdPnl)}${inp.cb > 0 || inp.cs > 0 ? '(매매 수수료 반영)' : ''}`);
+  setStat(3, '환율 변화', pctS(r.rF), `${fxT(inp.fb)} → ${fxT(inp.fn)} (${r.rF >= 0 ? '+' : MINUS}${fxT(Math.abs(inp.fn - inp.fb))})`);
+  if (r.beFx) {
+    const room = r.beFx / inp.fn - 1;
+    setStat(4, '본전 환율', fxT(Math.round(r.beFx * 10) / 10),
+      room < 0 ? `환율이 여기까지 ${pctS(room)} 더 내려도 원화 본전` : `환율이 여기까지 ${pctS(room)} 올라야 원화 본전`);
+  } else setStat(4, '본전 환율', '계산 불가', '평가액이 0이라 환율로는 본전을 맞출 수 없습니다');
+
+  renderDecomp(inp, r);
+  renderBreakEven(inp, r);
+  renderScenarios(inp, r);
+  renderInsight(inp, r);
+  lastExport = { inp, r };
+  lastText = buildResultText(inp, r);
+  syncUrl(inp);
+}
+
+function updateFxEffLine(inp) {
+  const el = document.getElementById('fx-eff-line');
+  if (!(inp.f > 0)) { el.textContent = '환전 비용 없음 (매매기준율 그대로 바꾼다고 가정)'; return; }
+  const buyFx = inp.fb * (1 + inp.f), sellFx = inp.fn * (1 - inp.f);
+  el.innerHTML = `실제 환전 수수료율 <b>${inp.fxFeePct.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')}%</b> · 살 때 1달러 = ${fxT(Math.round(buyFx * 100) / 100)}, 팔 때 1달러 = ${fxT(Math.round(sellFx * 100) / 100)}로 계산`;
+}
+
+const DC_COLORS = { pos: '#D9542B', neg: '#8FA0AE', total: '#3A2F26' };
+function decompItems(inp, r) {
+  const items = [
+    { key: 'P', name: '주가 효과', pct: r.rP, amt: r.amtP, desc: `주가 ${usd(inp.bp)} → ${usd(inp.cp)}. 달러로 주가가 움직인 몫입니다.` },
+  ];
+  if (inp.dv > 0) items.push({ key: 'D', name: '배당', pct: r.rD, amt: r.amtD, desc: `받은 배당 ${usd(inp.dv)}를 매수 환율로 친 몫입니다.` });
+  items.push({ key: 'F', name: '환율 효과', pct: r.rF, amt: r.amtF, desc: `환율 ${fxT(inp.fb)} → ${fxT(inp.fn)}. 주가가 그대로였어도 생겼을 몫입니다.` });
+  items.push({ key: 'X', name: '교차 효과', pct: r.rX, amt: r.amtX,
+    desc: `달러 수익률 ${pctS(r.rU)}에 환율 변화 ${pctS(r.rF)}가 한 번 더 곱해진 몫입니다 (${pctS(r.rU)} × ${pctS(r.rF)}). 번 돈(잃은 돈)도 원화로 바꿀 때 환율을 겪기 때문입니다.` });
+  if (r.hasCost) items.push({ key: 'C', name: '수수료·환전 비용', pct: r.amtCost / r.C0, amt: r.amtCost,
+    desc: '매매 수수료와 환전 수수료로 빠진 몫입니다.' });
+  return items;
+}
+function renderDecomp(inp, r) {
+  const items = decompItems(inp, r);
+  document.getElementById('dc-subtitle').textContent =
+    `원화 원금 ${krw(r.C0)}(=${usd(r.c0usd)} × ${fxT(inp.fb)})에서 출발해 각 효과가 더하고 뺀 금액을 차례로 쌓았습니다. 맨 아래 막대가 원화 손익 합계입니다.`;
+  const rowsHtml = items.map(it => `<div class="dc-row">
+      <div class="dc-name"><span class="dc-dot" style="background:${it.amt >= 0 ? DC_COLORS.pos : DC_COLORS.neg}"></span>${it.name}</div>
+      <div class="dc-pct ${cls(it.pct)}">${ppS(it.pct, 2)}</div>
+      <div class="dc-amt ${cls(it.amt)}">${krwS(it.amt)}</div>
+      <div class="dc-desc">${it.desc}</div></div>`).join('') +
+    `<div class="dc-row total">
+      <div class="dc-name"><span class="dc-dot" style="background:${DC_COLORS.total}"></span>원화 손익 합계</div>
+      <div class="dc-pct ${cls(r.pnl)}">${pctS(r.pnl / r.C0, 2)}</div>
+      <div class="dc-amt ${cls(r.pnl)}">${krwS(r.pnl)}</div>
+      <div class="dc-desc">${r.hasCost ? `실제로 낸 돈 ${krw(r.costKrw)} 기준 수익률은 ${pctS(r.rK, 2)}입니다.` : '주가 효과 + 환율 효과 + 교차 효과' + (inp.dv > 0 ? ' + 배당' : '') + ' = 원화 수익률'}</div></div>`;
+  document.getElementById('dc-list').innerHTML = rowsHtml;
+  drawDecomp(items, r);
+}
+
+function drawDecomp(items, r) {
+  const isMobile = window.innerWidth < 768;
+  let cum = 0;
+  const bars = items.map(it => { const s = cum; cum += it.amt; return [s, cum]; });
+  bars.push([0, r.pnl]);
+  const all = [...items, { name: '원화 손익 합계', amt: r.pnl, total: true }];
+  const colors = all.map(it => it.total ? DC_COLORS.total : it.amt >= 0 ? DC_COLORS.pos : DC_COLORS.neg);
+  const ext = bars.flat();
+  const lo = Math.min(0, ...ext), hi = Math.max(0, ...ext);
+  const span = Math.max(1, hi - lo);
+  if (dcChart) dcChart.destroy();
+  dcChart = new Chart(document.getElementById('dc-chart'), {
+    type: 'bar',
+    data: {
+      labels: all.map(it => it.name),
+      datasets: [{
+        label: '원화 손익', data: bars, backgroundColor: colors, borderRadius: 6, borderSkipped: false,
+        maxBarThickness: 34, minBarLength: 2,
+        datalabels: {
+          display: true, clamp: true,
+          anchor: c => all[c.dataIndex].amt >= 0 ? 'end' : 'start',
+          align: c => all[c.dataIndex].amt >= 0 ? 'right' : 'left',
+          offset: 6,
+          color: c => all[c.dataIndex].total ? '#3A2F26' : (all[c.dataIndex].amt >= 0 ? '#B8431F' : '#4F6170'),
+          font: { family: 'Pretendard', size: isMobile ? 11 : 12, weight: 800 },
+          formatter: (v, c) => (all[c.dataIndex].amt > 0.5 ? '+' : '') + krwShort(all[c.dataIndex].amt),
+        },
+      }],
+    },
+    options: {
+      ...chartCommonOptions,
+      indexAxis: 'y',
+      interaction: { mode: 'index', intersect: false },
+      layout: { padding: { left: 4, right: 12, top: 4, bottom: 4 } },
+      scales: {
+        x: {
+          suggestedMin: lo - span * (isMobile ? 0.32 : 0.2), suggestedMax: hi + span * (isMobile ? 0.32 : 0.2),
+          grid: { color: c => c.tick && c.tick.value === 0 ? '#8B8276' : '#EFE7DA' },
+          ticks: { font: { family: 'Pretendard', size: 11, weight: 600 }, color: '#8B8276', maxTicksLimit: isMobile ? 4 : 7, callback: v => krwShort(v) },
+        },
+        y: { grid: { display: false }, ticks: { font: { family: 'Pretendard', size: isMobile ? 11 : 12.5, weight: 800 }, color: '#3A2F26' } },
+      },
+      plugins: {
+        ...chartCommonOptions.plugins,
+        legend: { display: false },
+        tooltip: {
+          ...chartCommonOptions.plugins.tooltip, mode: 'index', intersect: false,
+          callbacks: {
+            label: c => {
+              const it = all[c.dataIndex];
+              return it.total ? `  원화 손익 합계: ${krwS(it.amt)}` : `  ${it.name}: ${krwS(it.amt)} (${ppS(it.pct, 2)})`;
+            },
+            afterLabel: c => all[c.dataIndex].total ? '' : `  누적: ${krwS(bars[c.dataIndex][1])}`,
+          },
+        },
+      },
+    },
+    plugins: [ChartDataLabels],
+  });
+}
+
+function renderBreakEven(inp, r) {
+  const fxBox = document.getElementById('be-fx'), pxBox = document.getElementById('be-px');
+  if (r.beFx) {
+    const room = r.beFx / inp.fn - 1;
+    fxBox.innerHTML = `<strong>본전 환율 ${fxT(Math.round(r.beFx * 10) / 10)}</strong><br>` +
+      `${inp.dv > 0 ? '주가·배당이' : '주가가'} 지금 그대로라면, 환율이 <strong>${fxT(Math.round(r.beFx * 10) / 10)}</strong>${room < 0 ? ' 아래로 내려가야' : '보다 높아져야'} ` +
+      (room < 0 ? `원화로 손실이 납니다. 지금(${fxT(inp.fn)})보다 <strong>${pctS(room)}</strong> 여유가 있습니다.`
+                : `원화로 본전입니다. 지금(${fxT(inp.fn)})보다 <strong>${pctS(room)}</strong> 올라야 합니다.`);
+  } else fxBox.innerHTML = '<strong>본전 환율 계산 불가</strong><br>평가액이 0이라 환율만으로는 본전을 맞출 수 없습니다.';
+  const room2 = r.bePx / inp.cp - 1;
+  if (r.bePx <= 0) {
+    pxBox.innerHTML = `<strong>본전 주가 $0 이하</strong><br>환율이 지금 그대로라면, 받은 배당만으로 이미 원화 원금을 넘었습니다.`;
+  } else {
+    pxBox.innerHTML = `<strong>본전 주가 ${usd(r.bePx)}</strong><br>환율이 지금(${fxT(inp.fn)}) 그대로라면, 주가가 <strong>${usd(r.bePx)}</strong>` +
+      (inp.cp > 0 && Math.abs(room2) < 0.0005 ? ` 근처라, 지금 주가가 딱 원화 본전입니다.`
+        : inp.cp > 0 ? (room2 < 0 ? ` 아래로 내려가야 원화로 손실입니다. 지금(${usd(inp.cp)})보다 <strong>${pctS(room2)}</strong> 여유가 있습니다.`
+                               : ` 이상이어야 원화로 본전입니다. 지금(${usd(inp.cp)})보다 <strong>${pctS(room2)}</strong> 올라야 합니다.`)
+                  : ' 이상이어야 원화로 본전입니다.') +
+      (Math.abs(inp.fn - inp.fb) > 0.01 ? ` 매수가(${usd(inp.bp)})와 다른 건 환율이 ${inp.fn < inp.fb ? '내려서' : '올라서'}입니다.` : '');
+  }
+}
+
+const SCEN_STEPS = [-0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15];
+function scenarioRows(inp, r) {
+  const rows = SCEN_STEPS.map(s => ({ fx: inp.fn * (1 + s), step: s, tag: s === 0 ? 'now' : '' }));
+  const near = v => rows.some(x => Math.abs(x.fx - v) < 0.5);
+  if (!near(inp.fb)) rows.push({ fx: inp.fb, step: inp.fb / inp.fn - 1, tag: 'buy' });
+  else rows.find(x => Math.abs(x.fx - inp.fb) < 0.5).alsoBuy = true;
+  if (r.beFx && !near(r.beFx)) rows.push({ fx: r.beFx, step: r.beFx / inp.fn - 1, tag: 'even' });
+  rows.sort((a, b) => a.fx - b.fx);
+  return rows.map(x => ({ ...x, res: compute(inp, x.fx) }));
+}
+function renderScenarios(inp, r) {
+  const rows = scenarioRows(inp, r);
+  document.getElementById('th-val').textContent = inp.dv > 0 ? '원화 평가액(배당 포함)' : '원화 평가액';
+  document.getElementById('scen-subtitle').textContent =
+    `주가 ${usd(inp.cp)}${inp.dv > 0 ? '·배당 ' + usd(inp.dv) : ''}는 그대로 두고, 지금 환율 ${fxT(inp.fn)}에서 −15%~+15%로 바꿨을 때입니다. 매수 환율과 본전 환율 행도 함께 넣었습니다.`;
+  document.getElementById('scen-body').innerHTML = rows.map(x => {
+    const tags = (x.tag === 'now' ? '<span class="tag-mini">지금</span>' : '') +
+      (x.tag === 'buy' || x.alsoBuy ? '<span class="tag-mini base">매수 환율</span>' : '') +
+      (x.tag === 'even' ? '<span class="tag-mini even">본전</span>' : '');
+    const rc = x.tag === 'now' ? ' class="highlight-row"' : (x.tag ? ' class="mark-row"' : '');
+    return `<tr${rc}>
+      <td>${pctS(x.step, x.tag === 'buy' || x.tag === 'even' ? 1 : 0)}${tags}</td>
+      <td>${fxT(Math.round(x.fx * 10) / 10)}</td>
+      <td class="c-brown">${krw(x.res.procKrw)}</td>
+      <td class="${x.res.pnl >= 0 ? 'c-accent' : 'c-neg'}">${krwS(x.res.pnl)}</td>
+      <td class="${x.res.rK >= 0 ? 'c-accent' : 'c-neg'}">${pctS(x.res.rK)}</td></tr>`;
+  }).join('');
+}
+
+function renderInsight(inp, r) {
+  const t = document.getElementById('insight-title'), d = document.getElementById('insight-desc');
+  const fxShare = r.pnl !== 0 ? (r.amtF + r.amtX) : 0;
+  if (Math.abs(r.rF) < 0.0005) {
+    t.textContent = '이번엔 환율이 조용했습니다 — 수익은 거의 주가 몫입니다';
+    d.innerHTML = `환율이 그대로면 달러 수익률이 곧 원화 수익률입니다. 하지만 환율은 1년에 10% 넘게 움직이는 해도 흔합니다. 아래 시나리오 표에서 환율이 ±10%만 움직여도 원화 손익이 얼마나 달라지는지 확인해 보세요.`;
+  } else if (r.rF < 0 && r.rU > 0) {
+    t.textContent = `주가는 맞혔는데, 환율이 ${krw(Math.abs(r.amtF + r.amtX))}을 가져갔습니다`;
+    d.innerHTML = `달러로는 <strong>${pctS(r.rU)}</strong>를 벌었지만 환율이 <strong>${pctS(r.rF)}</strong> 움직이면서 원화 수익률은 <strong>${pctS(r.rK)}</strong>가 됐습니다. ` +
+      `미국주식을 원화로 사는 순간 <strong>주식 + 달러</strong>를 함께 들고 있는 셈이라, 환율이 높을 때 산 만큼 환율 하락이 수익을 깎습니다. ` +
+      `환율 영향을 줄이는 방법(환헤지형 ETF 등)이 실제로 유리했을지는 <a href="https://ttokjaetv.github.io/fx-hedge-calc/" target="_blank" rel="noopener">환헤지 비교 계산기</a>로 따져 볼 수 있습니다.`;
+  } else if (r.rF > 0 && r.rU < 0) {
+    t.textContent = `주가는 빠졌지만, 환율이 ${krw(Math.abs(r.amtF + r.amtX))}을 메워 줬습니다`;
+    d.innerHTML = `달러로는 <strong>${pctS(r.rU)}</strong>지만 환율이 <strong>${pctS(r.rF)}</strong> 오르면서 원화로는 <strong>${pctS(r.rK)}</strong>입니다. ` +
+      `달러 자산이 주가 하락의 완충 역할을 한 경우입니다. 다만 환율은 반대로도 움직일 수 있어, 환율 덕을 본 수익은 '내 실력'과 나눠서 보는 게 좋습니다.`;
+  } else if (r.rF > 0) {
+    t.textContent = `주가에 환율까지 더해져 원화로 ${pctS(r.rK)}가 됐습니다`;
+    d.innerHTML = `달러 수익률 <strong>${pctS(r.rU)}</strong>에 환율 <strong>${pctS(r.rF)}</strong>, 그리고 둘이 겹친 교차 효과 <strong>${ppS(r.rX)}</strong>가 붙었습니다. ` +
+      `원화 손익 중 <strong>${krw(Math.abs(fxShare))}</strong>은 환율 덕입니다. 환율이 다시 내려가면 이 몫은 사라질 수 있으니, 본전 환율(<strong>${r.beFx ? fxT(Math.round(r.beFx)) : '-'}</strong>)을 기준선으로 기억해 두세요. ` +
+      `팔 계획이라면 환율 상승분도 양도차익에 들어가니 <a href="https://ttokjaetv.github.io/overseas-stock-tax/" target="_blank" rel="noopener">해외주식 양도세 계산기</a>도 함께 보세요.`;
+  } else {
+    t.textContent = `주가도 환율도 불리했습니다 — 원화로 ${pctS(r.rK)}`;
+    d.innerHTML = `달러로 <strong>${pctS(r.rU)}</strong>, 환율 <strong>${pctS(r.rF)}</strong>가 겹쳤습니다. 교차 효과 <strong>${ppS(r.rX)}</strong>는 두 손실이 겹치며 오히려 손실을 조금 줄여 주는 칸입니다(이미 줄어든 달러에 환율 하락이 붙기 때문). ` +
+      `환율이 지금 그대로라면 주가가 <strong>${r.bePx > 0 ? usd(r.bePx) : '$0'}</strong>까지 와야 원화 본전입니다.`;
+  }
+}
+
+// ============== 결과 복사 (사람이 읽는 몇 줄) ==============
+function buildResultText(inp, r) {
+  const L = [];
+  L.push('[미국주식 원화 수익률 계산 결과]');
+  L.push(`매수 ${usd(inp.bp)} × ${(inp.qty % 1 ? fmtNum(inp.qty, 4).replace(/\.?0+$/, '') : fmtNum(inp.qty, 0))}주 @ ${fxT(inp.fb)} → 지금 ${usd(inp.cp)} @ ${fxT(inp.fn)}${inp.dv > 0 ? ` · 배당 ${usd(inp.dv)}` : ''}`);
+  L.push(`달러 수익률 ${pctS(r.rU)} / 원화 수익률 ${pctS(r.rK)} (환율 ${pctS(r.rF)})`);
+  L.push(`원화 손익 ${krwS(r.pnl)} = 주가${inp.dv > 0 ? '·배당' : ''} ${krwS(r.amtP + r.amtD)} + 환율 ${krwS(r.amtF)} + 교차 ${krwS(r.amtX)}${r.hasCost ? ` + 비용 ${krwS(r.amtCost)}` : ''}`);
+  L.push(`본전 환율 ${r.beFx ? fxT(Math.round(r.beFx * 10) / 10) : '계산 불가'} · 본전 주가 ${r.bePx > 0 ? usd(r.bePx) : '$0 이하'}`);
+  L.push('※ 세전(해외주식 양도세 미반영) · 참고용 단순 계산');
+  L.push(buildUrl(inp));
+  return L.join('\n');
+}
+function copyText(text, btn, label) {
+  const done = ok => { btn.textContent = ok ? '복사했습니다' : '복사 실패 — 직접 선택해 복사하세요'; setTimeout(() => btn.textContent = label, 1800); };
+  const fallback = () => {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove(); done(ok);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+  else fallback();
+}
+
+// ============== 표 내려받기 ==============
+function exportScenRows(x) {
+  const R = v => Math.round(v), P = v => Math.round(v * 10000) / 100;
+  const rows = [['구분', '현재 환율 대비(%)', '환율(원)', '원화 평가액(원)', '원화 손익(원)', '원화 수익률(%)']];
+  scenarioRows(x.inp, x.r).forEach(s => {
+    const label = s.tag === 'now' ? '지금 환율' : s.tag === 'buy' || s.alsoBuy ? '매수 환율' : s.tag === 'even' ? '본전 환율' : '';
+    rows.push([label, P(s.step), Math.round(s.fx * 10) / 10, R(s.res.procKrw), R(s.res.pnl), P(s.res.rK)]);
+  });
+  return rows;
+}
+function exportDecompRows(x) {
+  const { inp, r } = x, R = v => Math.round(v), P = v => Math.round(v * 10000) / 100;
+  const rows = [['항목', '원화 원금 대비(%p)', '금액(원)']];
+  decompItems(inp, r).forEach(it => rows.push([it.name, P(it.pct), R(it.amt)]));
+  rows.push(['원화 손익 합계', P(r.pnl / r.C0), R(r.pnl)]);
+  rows.push([]);
+  rows.push(['입력값', '', '']);
+  rows.push(['매수가(달러)', inp.bp, ''], ['현재가(달러)', inp.cp, ''], ['수량(주)', inp.qty, ''],
+    ['매수 환율(원)', inp.fb, ''], ['지금 환율(원)', inp.fn, ''], ['배당 합계(달러, 세후)', inp.dv, ''],
+    ['매수 수수료(%)', inp.cb * 100, ''], ['매도 수수료(%)', inp.cs * 100, ''], ['환전 수수료(%)', Math.round(inp.fxFeePct * 10000) / 10000, '']);
+  rows.push([]);
+  rows.push(['결과', '', '']);
+  rows.push(['달러 수익률(%)', P(r.rU), ''], ['환율 변화율(%)', P(r.rF), ''], ['원화 수익률(%)', P(r.rK), ''],
+    ['낸 돈(원)', R(r.costKrw), ''], ['지금 원화 가치(원)', R(r.procKrw), ''],
+    ['본전 환율(원)', r.beFx ? Math.round(r.beFx * 10) / 10 : '', ''], ['본전 주가(달러)', r.bePx > 0 ? Math.round(r.bePx * 100) / 100 : 0, '']);
+  return rows;
+}
+document.addEventListener('click', e => {
+  const id = e.target && e.target.id;
+  if (!lastExport || (id !== 'dl-csv' && id !== 'dl-xlsx')) return;
+  const name = '미국주식_원화수익률';
+  if (id === 'dl-csv') TJX.csv(name, exportScenRows(lastExport));
+  else TJX.xlsx(name, [
+    { name: '환율 시나리오', rows: exportScenRows(lastExport), widths: [12, 17, 12, 18, 16, 15] },
+    { name: '수익 분해', rows: exportDecompRows(lastExport), widths: [22, 18, 16] },
+  ]);
+});
+
+// ============== 차트 공통 ==============
+const chartCommonOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { font: { family: 'Pretendard', size: 13, weight: 600 }, color: '#1A1A1A', usePointStyle: true, padding: 16 } },
+    tooltip: {
+      backgroundColor: '#FBF7F0', titleColor: '#1A1A1A', bodyColor: '#3A2F26', borderColor: '#D9542B', borderWidth: 1.5,
+      padding: 14, titleFont: { family: 'Pretendard', size: 14, weight: 800 }, bodyFont: { family: 'Pretendard', size: 13, weight: 600 },
+      titleSpacing: 6, bodySpacing: 8, titleMarginBottom: 10, caretSize: 8, cornerRadius: 10, usePointStyle: true, boxPadding: 6,
+    }
+  }
+};
+
+// ============== 입력칸 숫자 뒤 단위 ==============
+const unitCanvas = document.createElement('canvas').getContext('2d');
+function placeUnits() {
+  document.querySelectorAll('.input-wrap input[data-unit]').forEach(inp => {
+    let tag = inp.parentNode.querySelector('.input-unit');
+    if (!tag) { tag = document.createElement('span'); tag.className = 'input-unit'; tag.textContent = inp.dataset.unit; inp.after(tag); }
+    const cs = getComputedStyle(inp);
+    if (inp.value === '' || !inp.offsetWidth) { tag.style.visibility = 'hidden'; return; }
+    unitCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const w = unitCanvas.measureText(inp.value).width;
+    const left = parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + w + 4 - inp.scrollLeft;
+    tag.style.left = Math.round(left) + 'px';
+    tag.style.fontSize = cs.fontSize;
+    tag.style.visibility = left + tag.offsetWidth < inp.clientWidth - parseFloat(cs.paddingRight) + 8 ? 'visible' : 'hidden';
+  });
+}
+
+// ============== 입력 UI ==============
+const INPUT_IDS = ['bp', 'cp', 'qty', 'fb', 'fn', 'dv', 'cb', 'cs', 'fxf', 'pf', 'sp'];
+function updateDisplays() {
+  const v = id => parseFloat(document.getElementById(id).value);
+  const set = (id, text, empty) => { const el = document.getElementById(id); el.textContent = text; el.classList.toggle('empty', !!empty); };
+  const bp = v('bp'), cp = v('cp'), q = v('qty'), fb = v('fb'), fn = v('fn'), dv = v('dv');
+  set('bp-display', bp > 0 ? usd(bp) : '입력', !(bp > 0));
+  set('cp-display', cp >= 0 ? usd(cp) : '입력', !(cp >= 0));
+  set('qty-display', q > 0 && bp > 0 ? usd(q * bp, 0) + ' 어치' : '입력', !(q > 0 && bp > 0));
+  set('fb-display', fb > 0 ? fxT(fb) : '입력', !(fb > 0));
+  set('fn-display', fn > 0 ? fxT(fn) : '입력', !(fn > 0));
+  set('dv-display', dv > 0 ? usd(dv) : '없음', !(dv > 0));
+  ['cb', 'cs', 'fxf'].forEach(id => { const x = v(id); set(id + '-display', x > 0 ? x + '%' : '없음', !(x > 0)); });
+  const pf = v('pf'), sp = v('sp');
+  set('pf-display', isFinite(pf) ? '우대 ' + pf + '%' : '-', !isFinite(pf));
+  set('sp-display', isFinite(sp) ? sp.toFixed(2) + '%' : '-', !isFinite(sp));
+  document.querySelectorAll('.chips[data-target]').forEach(box => {
+    const cur = parseFloat(document.getElementById(box.dataset.target).value);
+    box.querySelectorAll('.chip').forEach(ch => ch.classList.toggle('on', parseFloat(ch.dataset.v) === cur));
+  });
+  const pref = document.querySelector('input[name=fxm]:checked').value === 'pref';
+  document.getElementById('fxf-group').classList.toggle('is-hidden', pref);
+  document.getElementById('pref-group').classList.toggle('is-hidden', !pref);
+  document.querySelectorAll('.radio-opt').forEach(o => o.classList.toggle('on', o.querySelector('input').checked));
+  const inp = readInputs(), parts = [];
+  parts.push(inp.dv > 0 ? '배당 ' + usd(inp.dv) : '배당 없음');
+  parts.push(inp.cb > 0 || inp.cs > 0 ? `수수료 매수 ${+(inp.cb * 100).toFixed(3)}%·매도 ${+(inp.cs * 100).toFixed(3)}%` : '수수료 없음');
+  if (inp.f > 0) parts.push(`환전 ${+inp.fxFeePct.toFixed(3)}%`);
+  document.getElementById('adv-summary').textContent = parts.join(' · ');
+}
+
+function rerender() { updateDisplays(); placeUnits(); render(); }
+
+function bindEvents() {
+  INPUT_IDS.forEach(id => document.getElementById(id).addEventListener('input', rerender));
+  document.querySelectorAll('input[name=fxm]').forEach(r => r.addEventListener('change', () => { rerender(); }));
+  document.querySelectorAll('.chips[data-target]').forEach(box => box.addEventListener('click', e => {
+    const ch = e.target.closest('.chip'); if (!ch) return;
+    document.getElementById(box.dataset.target).value = ch.dataset.v;
+    rerender();
+  }));
+  document.getElementById('adv-set').addEventListener('toggle', placeUnits);
+  document.getElementById('copy-link').addEventListener('click', e => copyText(buildUrl(readInputs()), e.currentTarget, '링크 복사'));
+  document.getElementById('copy-result').addEventListener('click', e => {
+    const btn = e.currentTarget;
+    if (!lastText) { btn.textContent = '먼저 숫자를 입력해 주세요'; setTimeout(() => btn.textContent = '결과 복사', 1800); return; }
+    copyText(lastText, btn, '결과 복사');
+  });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { placeUnits(); render(); }, 200); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeUnits);
+}
+
+// ============== 주소로 값 주고받기 ==============
+// 예: ?bp=100&cp=110&q=10&fb=1450&fn=1363&dv=0&cb=0.25&cs=0.25&fxm=pref&pf=95&sp=1
+const URL_MAP = { bp: 'bp', cp: 'cp', q: 'qty', fb: 'fb', fn: 'fn', dv: 'dv', cb: 'cb', cs: 'cs', fxf: 'fxf', pf: 'pf', sp: 'sp' };
+function buildUrl(inp) {
+  const p = new URLSearchParams();
+  const r4 = v => Math.round(v * 10000) / 10000;
+  p.set('bp', r4(inp.bp)); p.set('cp', r4(inp.cp)); p.set('q', r4(inp.qty));
+  p.set('fb', r4(inp.fb)); p.set('fn', r4(inp.fn));
+  if (inp.dv > 0) p.set('dv', r4(inp.dv));
+  if (inp.cb > 0) p.set('cb', r4(inp.cb * 100));
+  if (inp.cs > 0) p.set('cs', r4(inp.cs * 100));
+  if (inp.fxm === 'pref') { p.set('fxm', 'pref'); p.set('pf', r4(inp.pref)); p.set('sp', r4(inp.spread)); }
+  else if (inp.f > 0) p.set('fxf', r4(inp.fxFeePct));
+  return location.href.split('?')[0].split('#')[0] + '?' + p.toString();
+}
+function syncUrl(inp) {
+  try { history.replaceState(null, '', buildUrl(inp)); } catch (e) { /* file:// 등에서는 무시 */ }
+}
+function readUrl() {
+  let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (!q.toString()) return;
+  Object.entries(URL_MAP).forEach(([k, id]) => {
+    if (!q.has(k)) return;
+    const v = parseFloat(q.get(k));
+    if (!isFinite(v) || v < 0 || v > 1e9) return;
+    document.getElementById(id).value = String(Math.round(v * 10000) / 10000);
+  });
+  if (q.get('fxm') === 'pref') document.querySelector('input[name=fxm][value=pref]').checked = true;
+  if (['dv', 'cb', 'cs', 'fxf', 'fxm'].some(k => q.has(k) && (k === 'fxm' || parseFloat(q.get(k)) > 0))) document.getElementById('adv-set').open = true;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  readUrl();
+  bindEvents();
+  rerender();
+});
+</script>
+</body>
+</html>
