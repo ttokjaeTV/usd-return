@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script src="https://ttokjaetv.github.io/member-lock.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>미국주식 원화 수익률 계산기 · 똑재TV</title>
 <meta name="description" content="달러로는 +10%인데 원화로는 왜 +3%일까? 미국주식 수익률을 주가 효과·환율 효과·교차 효과로 나누고, 본전 환율·본전 주가, 환율 시나리오까지 계산합니다.">
@@ -432,7 +433,7 @@
     </div>
 
     <details class="adv-set" id="adv-set">
-      <summary><span class="adv-set-title">선택: 배당·수수료·환전 비용</span><span class="adv-set-sum" id="adv-summary">배당 없음 · 수수료 없음</span></summary>
+      <summary data-member-click="수수료·환전비용 상세 입력"><span class="adv-set-title">선택: 배당·수수료·환전 비용</span><span class="adv-set-sum" id="adv-summary">배당 없음 · 수수료 없음</span></summary>
       <div class="adv-body">
         <div class="grid-3" style="align-items:start;">
           <div class="input-group">
@@ -568,13 +569,13 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-member="환율 시나리오 표">
     <div class="step-label"><div class="step-line"></div><span class="step-text">환율 시나리오</span></div>
     <h3 class="chart-title">주가는 그대로, 환율만 바뀌면?</h3>
     <p class="chart-subtitle" id="scen-subtitle">-</p>
     <div class="dl-bar">
-      <button type="button" class="dl-btn" id="dl-csv">CSV 내려받기</button>
-      <button type="button" class="dl-btn" id="dl-xlsx">엑셀(.xlsx) 내려받기</button>
+      <button type="button" class="dl-btn" id="dl-csv" data-member-click="엑셀 내려받기">CSV 내려받기</button>
+      <button type="button" class="dl-btn" id="dl-xlsx" data-member-click="엑셀 내려받기">엑셀(.xlsx) 내려받기</button>
       <span class="dl-note">엑셀에는 환율 시나리오 표와 수익 분해 표가 함께 들어갑니다 (원 단위 숫자 · 세전)</span>
     </div>
     <div class="table-wrap">
@@ -1246,14 +1247,18 @@ function syncUrl(inp) {
 function readUrl() {
   let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
   if (!q.toString()) return;
+  const wantAdv = ['dv', 'cb', 'cs', 'fxf', 'fxm'].some(k => q.has(k) && (k === 'fxm' || parseFloat(q.get(k)) > 0));
+  const lockAdv = wantAdv && window.TJLock && TJLock.locked();   // 멤버십: 잠긴 상태로 받은 링크는 배당·수수료·환전 비용을 기본값으로 둠
   Object.entries(URL_MAP).forEach(([k, id]) => {
     if (!q.has(k)) return;
+    if (lockAdv && ['dv', 'cb', 'cs', 'fxf', 'pf', 'sp'].includes(k)) return;
     const v = parseFloat(q.get(k));
     if (!isFinite(v) || v < 0 || v > 1e9) return;
     document.getElementById(id).value = String(Math.round(v * 10000) / 10000);
   });
+  if (lockAdv) { TJLock.prompt('수수료·환전비용 상세 입력'); return; }
   if (q.get('fxm') === 'pref') document.querySelector('input[name=fxm][value=pref]').checked = true;
-  if (['dv', 'cb', 'cs', 'fxf', 'fxm'].some(k => q.has(k) && (k === 'fxm' || parseFloat(q.get(k)) > 0))) document.getElementById('adv-set').open = true;
+  if (wantAdv) document.getElementById('adv-set').open = true;
 }
 
 window.addEventListener('DOMContentLoaded', () => {
