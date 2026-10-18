@@ -761,7 +761,7 @@ function krw(n) {
   const neg = n < 0; const a = Math.abs(Math.round(n));
   let s;
   if (a >= 100000000) {
-    const eok = Math.floor(a / 100000000), man = Math.round((a % 100000000) / 10000);
+    const totMan = Math.round(a / 10000), eok = Math.floor(totMan / 10000), man = totMan % 10000;   // 만원 단위로 먼저 반올림한 뒤 억/만 분리
     s = man ? eok.toLocaleString() + '억 ' + man.toLocaleString() + '만원' : eok.toLocaleString() + '억원';
   } else s = a.toLocaleString() + '원';
   return (neg ? MINUS : '') + s;
