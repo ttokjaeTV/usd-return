@@ -887,7 +887,8 @@ function render() {
 
   // 카드 4개
   setStat(1, '원화 수익률', pctS(r.rK), `원화 손익 ${krwS(r.pnl)}${r.hasCost ? ' · 비용 반영' : ''}`);
-  setStat(2, '달러 수익률', pctS(r.rU), `주가 ${pctS(r.rP)}${inp.dv > 0 ? ' · 배당 ' + pctS(r.rD) : ''} · 달러 손익 ${usdS(r.usdPnl)}${inp.cb > 0 || inp.cs > 0 ? '(매매 수수료 반영)' : ''}`);
+  // 큰 숫자(달러 수익률)는 매매 수수료 전, 보조줄 달러 손익은 수수료 반영 — 수수료가 있으면 제목에 기준을 적음
+  setStat(2, inp.cb > 0 || inp.cs > 0 ? '달러 수익률 (수수료 전)' : '달러 수익률', pctS(r.rU), `주가 ${pctS(r.rP)}${inp.dv > 0 ? ' · 배당 ' + pctS(r.rD) : ''} · 달러 손익 ${usdS(r.usdPnl)}${inp.cb > 0 || inp.cs > 0 ? '(매매 수수료 반영)' : ''}`);
   setStat(3, '환율 변화', pctS(r.rF), `${fxT(inp.fb)} → ${fxT(inp.fn)} (${r.rF >= 0 ? '+' : MINUS}${fxT(Math.abs(inp.fn - inp.fb))})`);
   if (r.beFx) {
     const room = r.beFx / inp.fn - 1;
@@ -1072,7 +1073,7 @@ function renderInsight(inp, r) {
   } else if (r.rF > 0) {
     t.textContent = `주가에 환율까지 더해져 원화로 ${pctS(r.rK)}가 됐습니다`;
     d.innerHTML = `달러 수익률 <strong>${pctS(r.rU)}</strong>에 환율 <strong>${pctS(r.rF)}</strong>, 그리고 둘이 겹친 교차 효과 <strong>${ppS(r.rX)}</strong>가 붙었습니다. ` +
-      `원화 손익 중 <strong>${krw(Math.abs(fxShare))}</strong>은 환율 덕입니다. 환율이 다시 내려가면 이 몫은 사라질 수 있으니, 본전 환율(<strong>${r.beFx ? fxT(Math.round(r.beFx)) : '-'}</strong>)을 기준선으로 기억해 두세요. ` +
+      `원화 손익 중 <strong>${krw(Math.abs(fxShare))}</strong>은 환율 덕입니다. 환율이 다시 내려가면 이 몫은 사라질 수 있으니, 본전 환율(<strong>${r.beFx ? fxT(Math.round(r.beFx * 10) / 10) : '-'}</strong>)을 기준선으로 기억해 두세요. ` +
       `팔 계획이라면 환율 상승분도 양도차익에 들어가니 <a href="https://ttokjaetv.github.io/overseas-stock-tax/" target="_blank" rel="noopener">해외주식 양도세 계산기</a>도 함께 보세요.`;
   } else {
     t.textContent = `주가도 환율도 불리했습니다 — 원화로 ${pctS(r.rK)}`;
